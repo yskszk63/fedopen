@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os/exec"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
@@ -26,7 +27,14 @@ type getSigninTokenResponse struct {
 	SigninToken string
 }
 
-func getFederationToken(cx context.Context, client *sts.Client, name, policyArn string) (*types.Credentials, error) {
+type credentials struct {
+	accessKeyId *string
+	secretAccessKey *string
+	sessionToken *string
+
+}
+
+func getFederationToken(cx context.Context, client *sts.Client, name, policyArn string) (*credentials, error) {
 	resp, err := client.GetFederationToken(cx, &sts.GetFederationTokenInput{
 		Name: &name,
 		PolicyArns: []types.PolicyDescriptorType{
@@ -39,14 +47,31 @@ func getFederationToken(cx context.Context, client *sts.Client, name, policyArn 
 	if resp.Credentials == nil {
 		return nil, errors.New("resp.Credentials is nil")
 	}
-	return resp.Credentials, nil
+
+	return &credentials{
+		accessKeyId: resp.Credentials.AccessKeyId,
+		secretAccessKey: resp.Credentials.SecretAccessKey,
+		sessionToken: resp.Credentials.SessionToken,
+	}, nil
 }
 
-func getSigninToken(cx context.Context, cred *types.Credentials) (string, error) {
+func getCred(cx context.Context, cfg aws.Config) (*credentials, error) {
+	cred, err := cfg.Credentials.Retrieve(cx)
+	if err != nil {
+		return nil, err
+	}
+	return &credentials{
+		accessKeyId: &cred.AccessKeyID,
+		secretAccessKey: &cred.SecretAccessKey,
+		sessionToken: &cred.SessionToken,
+	}, nil
+}
+
+func getSigninToken(cx context.Context, cred *credentials) (string, error) {
 	req := getSigninTokenRequest{
-		SessionId: cred.AccessKeyId,
-		SessionKey: cred.SecretAccessKey,
-		SessionToken: cred.SessionToken,
+		SessionId: cred.accessKeyId,
+		SessionKey: cred.secretAccessKey,
+		SessionToken: cred.sessionToken,
 	}
 	tmpCred, err := json.Marshal(req)
 	if err != nil {
@@ -114,8 +139,15 @@ func main() {
 
 	cred, err := getFederationToken(cx, stsc, name, policyArn)
 	if err != nil {
-		log.Fatal(err)
+		// log.Println(err)
+
+		// assumed role?
+		cred, err = getCred(cx, cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
+	// TODO or Ask the user to specify the role.
 
 	token, err := getSigninToken(cx, cred)
 	if err != nil {
