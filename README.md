@@ -16,6 +16,10 @@ https://signin.aws.amazon.com/federation?Action=login&Destination=https%3A%2F%2F
 $ 
 ```
 
+## Download
+
+https://github.com/yskszk63/fedopen/releases/latest
+
 ## License
 
 [MIT](LICENSE)
