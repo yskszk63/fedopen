@@ -12,7 +12,6 @@ import (
 	"os/exec"
 
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 )
@@ -25,15 +24,6 @@ type getSigninTokenRequest struct{
 
 type getSigninTokenResponse struct {
 	SigninToken string
-}
-
-func decideName(cx context.Context, client *iam.Client, defaultName string) string {
-	resp, err := client.GetUser(cx, &iam.GetUserInput{})
-	if err != nil || resp.User == nil || resp.User.UserName == nil {
-		return defaultName
-	}
-
-	return *resp.User.UserName
 }
 
 func getFederationToken(cx context.Context, client *sts.Client, name, policyArn string) (*types.Credentials, error) {
@@ -117,10 +107,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	iamc := iam.NewFromConfig(cfg)
 	stsc := sts.NewFromConfig(cfg)
 
-	name := decideName(cx, iamc, "fedopen")
+	name := "fedopen"
 	policyArn := "arn:aws:iam::aws:policy/AdministratorAccess"
 
 	cred, err := getFederationToken(cx, stsc, name, policyArn)
