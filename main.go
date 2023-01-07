@@ -17,9 +17,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 )
 
-type getSigninTokenRequest struct{
-	SessionId *string `json:"sessionId"`
-	SessionKey *string `json:"sessionKey"`
+type getSigninTokenRequest struct {
+	SessionId    *string `json:"sessionId"`
+	SessionKey   *string `json:"sessionKey"`
 	SessionToken *string `json:"sessionToken"`
 }
 
@@ -28,17 +28,16 @@ type getSigninTokenResponse struct {
 }
 
 type credentials struct {
-	accessKeyId *string
+	accessKeyId     *string
 	secretAccessKey *string
-	sessionToken *string
-
+	sessionToken    *string
 }
 
 func getFederationToken(cx context.Context, client *sts.Client, name, policyArn string) (*credentials, error) {
 	resp, err := client.GetFederationToken(cx, &sts.GetFederationTokenInput{
 		Name: &name,
 		PolicyArns: []types.PolicyDescriptorType{
-			{ Arn: &policyArn },
+			{Arn: &policyArn},
 		},
 	})
 	if err != nil {
@@ -49,9 +48,9 @@ func getFederationToken(cx context.Context, client *sts.Client, name, policyArn 
 	}
 
 	return &credentials{
-		accessKeyId: resp.Credentials.AccessKeyId,
+		accessKeyId:     resp.Credentials.AccessKeyId,
 		secretAccessKey: resp.Credentials.SecretAccessKey,
-		sessionToken: resp.Credentials.SessionToken,
+		sessionToken:    resp.Credentials.SessionToken,
 	}, nil
 }
 
@@ -61,16 +60,16 @@ func getCred(cx context.Context, cfg aws.Config) (*credentials, error) {
 		return nil, err
 	}
 	return &credentials{
-		accessKeyId: &cred.AccessKeyID,
+		accessKeyId:     &cred.AccessKeyID,
 		secretAccessKey: &cred.SecretAccessKey,
-		sessionToken: &cred.SessionToken,
+		sessionToken:    &cred.SessionToken,
 	}, nil
 }
 
 func getSigninToken(cx context.Context, cred *credentials) (string, error) {
 	req := getSigninTokenRequest{
-		SessionId: cred.accessKeyId,
-		SessionKey: cred.secretAccessKey,
+		SessionId:    cred.accessKeyId,
+		SessionKey:   cred.secretAccessKey,
 		SessionToken: cred.sessionToken,
 	}
 	tmpCred, err := json.Marshal(req)
