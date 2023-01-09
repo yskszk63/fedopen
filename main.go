@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -115,7 +116,11 @@ func genLoginUrl(token string) string {
 func openOrPrint(url string) {
 	p, err := exec.LookPath("xdg-open")
 	if err == nil {
-		if err := exec.Command(p, url).Run(); err == nil {
+		c := exec.Command(p, url)
+		c.Stdin = nil
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		if err := c.Run(); err == nil {
 			return
 		}
 	}
